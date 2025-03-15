@@ -47,7 +47,7 @@ fn extract_instance_view(tree: &RojoTree, id: Ref) -> InstanceView {
         id: instance.id(),
         name: instance.name().to_owned(),
         class_name: instance.class_name().to_owned(),
-        properties: instance.properties().clone(),
+        properties: instance.properties().iter().map(|(key, value)| (key.to_string(), value.to_owned())).collect(),
         metadata: instance.metadata().clone(),
         children: instance
             .children()

@@ -2,9 +2,9 @@
 
 use std::{borrow::Cow, collections::HashMap};
 
+use ahash::AHashMap;
 use rbx_dom_weak::{
-    types::{Ref, Variant},
-    Instance, WeakDom,
+    types::{Ref, Variant}, ustr, Instance, Ustr, UstrMap, WeakDom
 };
 use serde::{Deserialize, Serialize};
 
@@ -27,10 +27,10 @@ pub struct InstanceSnapshot {
     pub name: Cow<'static, str>,
 
     /// Corresponds to the ClassName property of the instance.
-    pub class_name: Cow<'static, str>,
+    pub class_name: Ustr,
 
     /// All other properties of the instance, weakly-typed.
-    pub properties: HashMap<String, Variant>,
+    pub properties: UstrMap<Variant>,
 
     /// The children of the instance represented as more snapshots.
     ///
@@ -44,8 +44,8 @@ impl InstanceSnapshot {
             snapshot_id: Ref::none(),
             metadata: InstanceMetadata::default(),
             name: Cow::Borrowed("DEFAULT"),
-            class_name: Cow::Borrowed("DEFAULT"),
-            properties: HashMap::new(),
+            class_name: ustr("DEFAULT"),
+            properties: UstrMap::default(),
             children: Vec::new(),
         }
     }
@@ -59,7 +59,7 @@ impl InstanceSnapshot {
 
     pub fn class_name(self, class_name: impl Into<String>) -> Self {
         Self {
-            class_name: Cow::Owned(class_name.into()),
+            class_name: ustr(class_name.into().as_str()),
             ..self
         }
     }
@@ -69,13 +69,17 @@ impl InstanceSnapshot {
         K: Into<String>,
         V: Into<Variant>,
     {
-        self.properties.insert(key.into(), value.into());
+        self.properties.insert(ustr(key.into().as_str()), value.into());
         self
     }
 
     pub fn properties(self, properties: impl Into<HashMap<String, Variant>>) -> Self {
         Self {
-            properties: properties.into(),
+            properties: properties
+                .into()
+                .into_iter()
+                .map(|(k, v)| (ustr(&k), v)) // Convert String keys to Ustr
+                .collect(),
             ..self
         }
     }
@@ -107,7 +111,7 @@ impl InstanceSnapshot {
         Self::from_raw_tree(&mut raw_tree, id)
     }
 
-    fn from_raw_tree(raw_tree: &mut HashMap<Ref, Instance>, id: Ref) -> Self {
+    fn from_raw_tree(raw_tree: &mut AHashMap<Ref, Instance>, id: Ref) -> Self {
         let instance = raw_tree
             .remove(&id)
             .expect("instance did not exist in tree");
@@ -122,7 +126,7 @@ impl InstanceSnapshot {
             snapshot_id: id,
             metadata: InstanceMetadata::default(),
             name: Cow::Owned(instance.name),
-            class_name: Cow::Owned(instance.class),
+            class_name: instance.class,
             properties: instance.properties,
             children,
         }

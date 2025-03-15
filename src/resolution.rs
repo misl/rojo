@@ -114,6 +114,9 @@ impl AmbiguousValue {
                 (VariantType::Content, AmbiguousValue::String(value)) => {
                     Ok(Content::from(value).into())
                 }
+                (VariantType::ContentId, AmbiguousValue::String(value)) => {
+                    Ok(Content::from(value).into())
+                }
 
                 (VariantType::Vector2, AmbiguousValue::Array2(value)) => {
                     Ok(Vector2::new(value[0] as f32, value[1] as f32).into())

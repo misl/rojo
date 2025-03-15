@@ -1,7 +1,7 @@
-use std::{borrow::Cow, collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf};
 
 use anyhow::{format_err, Context};
-use rbx_dom_weak::types::Attributes;
+use rbx_dom_weak::{types::Attributes, ustr};
 use serde::{Deserialize, Serialize};
 
 use crate::{resolution::UnresolvedValue, snapshot::InstanceSnapshot};
@@ -53,7 +53,7 @@ impl AdjacentMetadata {
                 .resolve(&snapshot.class_name, &key)
                 .with_context(|| format!("error applying meta file {}", path.display()))?;
 
-            snapshot.properties.insert(key, value);
+            snapshot.properties.insert(ustr(&key), value);
         }
 
         if !self.attributes.is_empty() {
@@ -136,7 +136,7 @@ impl DirectoryMetadata {
                 ));
             }
 
-            snapshot.class_name = Cow::Owned(class_name);
+            snapshot.class_name = ustr(&class_name);
         }
 
         Ok(())
@@ -156,7 +156,7 @@ impl DirectoryMetadata {
                 .resolve(&snapshot.class_name, &key)
                 .with_context(|| format!("error applying meta file {}", path.display()))?;
 
-            snapshot.properties.insert(key, value);
+            snapshot.properties.insert(ustr(&key), value);
         }
 
         if !self.attributes.is_empty() {

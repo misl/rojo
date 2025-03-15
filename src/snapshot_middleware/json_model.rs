@@ -2,7 +2,7 @@ use std::{borrow::Cow, collections::HashMap, path::Path, str};
 
 use anyhow::Context;
 use memofs::Vfs;
-use rbx_dom_weak::types::{Attributes, Ref};
+use rbx_dom_weak::{types::{Attributes, Ref}, ustr, UstrMap};
 use serde::Deserialize;
 
 use crate::{
@@ -94,10 +94,10 @@ impl JsonModel {
             children.push(child.into_snapshot()?);
         }
 
-        let mut properties = HashMap::with_capacity(self.properties.len());
+        let mut properties = UstrMap::default();
         for (key, unresolved) in self.properties {
             let value = unresolved.resolve(&class_name, &key)?;
-            properties.insert(key, value);
+            properties.insert(ustr(&key), value);
         }
 
         if !self.attributes.is_empty() {
@@ -115,7 +115,7 @@ impl JsonModel {
             snapshot_id: Ref::none(),
             metadata: Default::default(),
             name: Cow::Owned(name),
-            class_name: Cow::Owned(class_name),
+            class_name: ustr(&class_name),
             properties,
             children,
         })

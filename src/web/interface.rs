@@ -120,12 +120,13 @@ pub struct Instance<'a> {
 }
 
 impl<'a> Instance<'a> {
-    pub(crate) fn from_rojo_instance(source: InstanceWithMeta<'_>) -> Instance<'_> {
+    pub(crate) fn from_rojo_instance(source: InstanceWithMeta<'a>) -> Instance<'a> {
         let properties = source
             .properties()
             .iter()
             .filter(|(_key, value)| property_filter(Some(value)))
-            .map(|(key, value)| (key.clone(), Cow::Borrowed(value)))
+            .map(|(key, value)| (key.to_string(), Cow::Owned(value.clone())))
+            .clone()
             .collect();
 
         Instance {
@@ -137,6 +138,7 @@ impl<'a> Instance<'a> {
             children: Cow::Borrowed(source.children()),
             metadata: Some(InstanceMetadata::from_rojo_metadata(source.metadata())),
         }
+
     }
 }
 

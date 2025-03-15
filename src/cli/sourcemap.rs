@@ -113,7 +113,7 @@ fn filter_nothing(_instance: &InstanceWithMeta) -> bool {
 
 fn filter_non_scripts(instance: &InstanceWithMeta) -> bool {
     matches!(
-        instance.class_name(),
+        instance.class_name().as_str(),
         "Script" | "LocalScript" | "ModuleScript"
     )
 }

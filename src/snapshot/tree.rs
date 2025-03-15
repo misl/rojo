@@ -4,8 +4,7 @@ use std::{
 };
 
 use rbx_dom_weak::{
-    types::{Ref, Variant},
-    Instance, InstanceBuilder, WeakDom,
+    types::{Ref, Variant}, ustr, Instance, InstanceBuilder, Ustr, UstrMap, WeakDom
 };
 
 use crate::multimap::MultiMap;
@@ -97,7 +96,7 @@ impl RojoTree {
         // every instance that inherits from Model for pivots to build correctly.
         let hack_needs_pivot_migration = match snapshot.class_name.as_ref() {
             "Model" | "Actor" | "Tool" | "HopperBin" | "Flag" | "WorldModel" | "Workspace"
-                if !snapshot.properties.contains_key("NeedsPivotMigration") =>
+                if !snapshot.properties.contains_key(&ustr("NeedsPivotMigration")) =>
             {
                 vec![("NeedsPivotMigration", Variant::Bool(false))]
             }
@@ -105,7 +104,7 @@ impl RojoTree {
         };
 
         let builder = InstanceBuilder::empty()
-            .with_class(snapshot.class_name.into_owned())
+            .with_class(snapshot.class_name)
             .with_name(snapshot.name.into_owned())
             .with_properties(snapshot.properties)
             .with_properties(hack_needs_pivot_migration);
@@ -250,11 +249,11 @@ impl<'a> InstanceWithMeta<'a> {
         &self.instance.name
     }
 
-    pub fn class_name(&self) -> &'a str {
+    pub fn class_name(&self) -> &'a Ustr {
         &self.instance.class
     }
 
-    pub fn properties(&self) -> &'a HashMap<String, Variant> {
+    pub fn properties(&self) -> &UstrMap<Variant> {
         &self.instance.properties
     }
 
@@ -291,19 +290,19 @@ impl InstanceWithMetaMut<'_> {
         &mut self.instance.name
     }
 
-    pub fn class_name(&self) -> &str {
+    pub fn class_name(&self) -> &Ustr {
         &self.instance.class
     }
 
-    pub fn class_name_mut(&mut self) -> &mut String {
+    pub fn class_name_mut(&mut self) -> &mut Ustr {
         &mut self.instance.class
     }
 
-    pub fn properties(&self) -> &HashMap<String, Variant> {
+    pub fn properties(&self) -> &UstrMap<Variant> {
         &self.instance.properties
     }
 
-    pub fn properties_mut(&mut self) -> &mut HashMap<String, Variant> {
+    pub fn properties_mut(&mut self) -> &mut UstrMap<Variant> {
         &mut self.instance.properties
     }
 

@@ -105,10 +105,10 @@ fn compute_property_patches(
         Some(take(&mut snapshot.name).into_owned())
     };
 
-    let changed_class_name = if snapshot.class_name == instance.class_name() {
+    let changed_class_name = if snapshot.class_name == *instance.class_name() {
         None
     } else {
-        Some(take(&mut snapshot.class_name).into_owned())
+        Some(take(&mut snapshot.class_name).to_string())
     };
 
     let changed_metadata = if &snapshot.metadata == instance.metadata() {
@@ -118,26 +118,26 @@ fn compute_property_patches(
     };
 
     for (name, snapshot_value) in take(&mut snapshot.properties) {
-        visited_properties.insert(name.clone());
+        visited_properties.insert(name.to_string());
 
         match instance.properties().get(&name) {
             Some(instance_value) => {
                 if &snapshot_value != instance_value {
-                    changed_properties.insert(name, Some(snapshot_value));
+                    changed_properties.insert(name.to_string(), Some(snapshot_value));
                 }
             }
             None => {
-                changed_properties.insert(name, Some(snapshot_value));
+                changed_properties.insert(name.to_string(), Some(snapshot_value));
             }
         }
     }
 
     for name in instance.properties().keys() {
-        if visited_properties.contains(name.as_str()) {
+        if visited_properties.contains(&name.to_string()) {
             continue;
         }
 
-        changed_properties.insert(name.clone(), None);
+        changed_properties.insert(name.to_string(), None);
     }
 
     if changed_properties.is_empty()
@@ -151,8 +151,8 @@ fn compute_property_patches(
     patch_set.updated_instances.push(PatchUpdate {
         id: instance.id(),
         changed_name,
-        changed_class_name,
-        changed_properties,
+        changed_class_name: changed_class_name,
+        changed_properties: changed_properties,
         changed_metadata,
     });
 }
@@ -187,7 +187,7 @@ fn compute_children_patches(
                         .expect("Instance did not exist in tree");
 
                     if snapshot_child.name == instance_child.name()
-                        && snapshot_child.class_name == instance_child.class_name()
+                        && snapshot_child.class_name == *instance_child.class_name()
                     {
                         paired_instances[*instance_index] = true;
                         return true;
@@ -231,6 +231,7 @@ mod test {
     use std::borrow::Cow;
 
     use maplit::hashmap;
+    use rbx_dom_weak::{ustr, UstrMap};
 
     /// This test makes sure that rewriting refs in instance update patches to
     /// instances that already exists works. We should be able to correlate the
@@ -246,14 +247,11 @@ mod test {
         // addition of a prop named Self, which is a self-referential Ref.
         let snapshot_id = Ref::new();
         let snapshot = InstanceSnapshot {
-            snapshot_id: snapshot_id,
-            properties: hashmap! {
-                "Self".to_owned() => Variant::Ref(snapshot_id),
-            },
-
+            snapshot_id,
+            properties: [(ustr("Self"), Variant::Ref(snapshot_id))].into_iter().collect(),
             metadata: Default::default(),
             name: Cow::Borrowed("foo"),
-            class_name: Cow::Borrowed("foo"),
+            class_name: ustr("foo"),
             children: Vec::new(),
         };
 
@@ -290,21 +288,18 @@ mod test {
         let snapshot = InstanceSnapshot {
             snapshot_id: snapshot_id,
             children: vec![InstanceSnapshot {
-                properties: hashmap! {
-                    "Self".to_owned() => Variant::Ref(snapshot_id),
-                },
-
+                properties: [(ustr("Self"), Variant::Ref(snapshot_id))].into_iter().collect(),
                 snapshot_id: Ref::none(),
                 metadata: Default::default(),
                 name: Cow::Borrowed("child"),
-                class_name: Cow::Borrowed("child"),
+                class_name: ustr("child"),
                 children: Vec::new(),
             }],
 
             metadata: Default::default(),
-            properties: HashMap::new(),
+            properties: UstrMap::default(),
             name: Cow::Borrowed("foo"),
-            class_name: Cow::Borrowed("foo"),
+            class_name: ustr("foo"),
         };
 
         let patch_set = compute_patch_set(Some(snapshot), &tree, root_id);
@@ -315,11 +310,9 @@ mod test {
                 instance: InstanceSnapshot {
                     snapshot_id: Ref::none(),
                     metadata: Default::default(),
-                    properties: hashmap! {
-                        "Self".to_owned() => Variant::Ref(root_id),
-                    },
+                    properties: [(ustr("Self"), Variant::Ref(root_id))].into_iter().collect(),
                     name: Cow::Borrowed("child"),
-                    class_name: Cow::Borrowed("child"),
+                    class_name: ustr("child"),
                     children: Vec::new(),
                 },
             }],

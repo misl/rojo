@@ -120,7 +120,7 @@ impl UiService {
             .map(|(key, value)| {
                 html! {
                     <div class="instance-property" title={ Self::display_value(value) }>
-                        { key.clone() } ": " { format!("{:?}", value.ty()) }
+                        { key.to_string() } ": " { format!("{:?}", value.ty()) }
                     </div>
                 }
             })

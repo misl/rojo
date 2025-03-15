@@ -5,7 +5,7 @@ use std::{
     mem::take,
 };
 
-use rbx_dom_weak::types::{Ref, Variant};
+use rbx_dom_weak::{types::{Ref, Variant}, ustr};
 
 use super::{
     patch::{AppliedPatchSet, AppliedPatchUpdate, PatchSet, PatchUpdate},
@@ -169,7 +169,7 @@ fn apply_update_child(context: &mut PatchApplyContext, tree: &mut RojoTree, patc
     }
 
     if let Some(class_name) = patch.changed_class_name {
-        *instance.class_name_mut() = class_name.clone();
+        *instance.class_name_mut() = ustr(&class_name);
         applied_patch.changed_class_name = Some(class_name);
     }
 
@@ -195,13 +195,13 @@ fn apply_update_child(context: &mut PatchApplyContext, tree: &mut RojoTree, patc
 
                 instance
                     .properties_mut()
-                    .insert(key.clone(), Variant::Ref(new_referent));
+                    .insert(ustr(&key), Variant::Ref(new_referent));
             }
             Some(ref value) => {
-                instance.properties_mut().insert(key.clone(), value.clone());
+                instance.properties_mut().insert(ustr(&key), value.clone());
             }
             None => {
-                instance.properties_mut().remove(&key);
+                instance.properties_mut().remove(&ustr(&key));
             }
         }
 
@@ -234,10 +234,8 @@ mod test {
             snapshot_id: Ref::none(),
             metadata: Default::default(),
             name: Cow::Borrowed("Foo"),
-            class_name: Cow::Borrowed("Bar"),
-            properties: hashmap! {
-                "Baz".to_owned() => Variant::Int32(5),
-            },
+            class_name: ustr("Bar"),
+            properties: [(ustr("Baz"), Variant::Int32(5))].into_iter().collect(),
             children: Vec::new(),
         };
 
@@ -300,11 +298,11 @@ mod test {
 
         apply_patch_set(&mut tree, patch_set);
 
-        let expected_properties = hashmap! {
-            "Foo".to_owned() => Variant::Int32(8),
-            "Baz".to_owned() => Variant::Int32(10),
-            "Unchanged".to_owned() => Variant::Int32(-5),
-        };
+        let expected_properties = [
+            (ustr("Foo"), Variant::Int32(8)),
+            (ustr("Baz"), Variant::Int32(10)),
+            (ustr("Unchanged"), Variant::Int32(-5))
+        ].into_iter().collect();
 
         let root_instance = tree.get_instance(root_id).unwrap();
         assert_eq!(root_instance.name(), "Foo");

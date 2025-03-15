@@ -1,6 +1,7 @@
 use insta::assert_yaml_snapshot;
 use maplit::hashmap;
 
+use rbx_dom_weak::ustr;
 use rojo_insta_ext::RedactionMap;
 
 use crate::{
@@ -77,7 +78,7 @@ fn remove_property() {
 
         root_instance
             .properties_mut()
-            .insert("Foo".to_owned(), "Should be removed".into());
+            .insert(ustr("Foo"), "Should be removed".into());
     }
 
     let tree_view = view_tree(&tree, &mut redactions);

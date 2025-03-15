@@ -1,8 +1,8 @@
-use std::{borrow::Cow, collections::HashMap, ffi::OsStr, path::Path};
+use std::{borrow::Cow, ffi::OsStr, path::Path};
 
 use anyhow::{bail, Context};
 use memofs::Vfs;
-use rbx_dom_weak::types::{Attributes, Ref};
+use rbx_dom_weak::{types::{Attributes, Ref}, ustr, UstrMap};
 use rbx_reflection::ClassTag;
 
 use crate::{
@@ -111,7 +111,7 @@ pub fn snapshot_project_node(
     let mut class_name_from_path = None;
 
     let name = Cow::Owned(instance_name.to_owned());
-    let mut properties = HashMap::new();
+    let mut properties = UstrMap::default();
     let mut children = Vec::new();
     let mut metadata = InstanceMetadata::new().context(context);
 
@@ -158,20 +158,20 @@ pub fn snapshot_project_node(
         &node.path,
     ) {
         // These are the easy, happy paths!
-        (Some(project), None, None, _) => project,
+        (Some(project), None, None, _) => ustr(&project),
         (None, Some(path), None, _) => path,
-        (None, None, Some(inference), _) => inference,
+        (None, None, Some(inference), _) => ustr(&inference),
 
         // If the user specifies a class name, but there's an inferred class
         // name, we prefer the name listed explicitly by the user.
-        (Some(project), None, Some(_), _) => project,
+        (Some(project), None, Some(_), _) => ustr(&project),
 
         // If the user has a $path pointing to a folder and we're able to infer
         // a class name, let's use the inferred name. If the path we're pointing
         // to isn't a folder, though, that's a user error.
         (None, Some(path), Some(inference), _) => {
             if path == "Folder" {
-                inference
+                ustr(&inference)
             } else {
                 path
             }
@@ -179,7 +179,7 @@ pub fn snapshot_project_node(
 
         (Some(project), Some(path), _, _) => {
             if path == "Folder" {
-                project
+                ustr(&project)
             } else {
                 bail!(
                     "ClassName for Instance \"{}\" was specified in both the project file (as \"{}\") and from the filesystem (as \"{}\").\n\
@@ -265,7 +265,7 @@ pub fn snapshot_project_node(
             _ => {}
         }
 
-        properties.insert(key.clone(), value);
+        properties.insert( ustr(key), value);
     }
 
     if !node.attributes.is_empty() {
